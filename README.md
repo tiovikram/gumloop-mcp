@@ -1,101 +1,151 @@
-# OpenAI Web Search MCP Server
+# Gumloop MCP Server
 
-MCP Server for OpenAI's Web Search API, enabling AI models to search the web
-for current information before generating responses.
+MCP Server for Gumloop's API, enabling AI models to manage and execute automations through a standardized interface.
 
 ## Features
 
-- **Always-on Web Search**: When using Chat Completions API with dedicated
-search models, always retrieves web information
-
-- **Conditional Web Search**: When using Responses API, only searches when
-necessary for responding to queries
-
-- **Geographic Customization**: Refine search results based on user location
-
-- **Configurable Context Size**: Balance between quality, cost, and latency
-
-- **Automatic Citations**: Includes inline citations and annotations for
-sources used
+- **Flow Management**: Start automations and monitor their execution status
+- **Workspace Discovery**: List available workbooks and saved automation flows
+- **Input Schema Retrieval**: Get detailed information about required inputs for flows
+- **File Operations**: Upload and download files used in automations
+- **Context-Aware Execution**: Run automations with input parameters specific to user needs
 
 ## Tools
 
-### `web_search_chat_completion`
+### `startAutomation`
 
-Perform a web search using OpenAI's Chat Completions API with search-enabled models.
-
-**Inputs:**
-- `model` (string): Model to use for web search
-  - `gpt-4o-search-preview`
-  - `gpt-4o-mini-search-preview`
-- `messages` (array): Conversation messages
-  - `role` (string): Message role (`user`, `assistant`, or `system`)
-  - `content` (string): Message content
-- `web_search_options` (object, optional): Configuration options for web search
-  - `user_location` (object, optional): User location to refine search results
-    - `type` (string): Always "approximate"
-    - `approximate` (object):
-      - `country` (string, optional): Two-letter ISO country code (e.g., "US")
-      - `city` (string, optional): City name (e.g., "San Francisco")
-      - `region` (string, optional): Region or state (e.g., "California")
-	  - `timezone` (string, optional): IANA timezone (e.g.,
-"America/Los_Angeles")
-  - `search_context_size` (string, optional): Amount of context retrieved from
-the web
-    - `low`: Least context, lowest cost, fastest response
-    - `medium` (default): Balanced context, cost, and latency
-    - `high`: Most comprehensive context, highest cost, slower response
-
-**Returns:** Response with model-generated content and citations
-
-### `web_search_responses`
-
-Perform a web search using OpenAI's Responses API with web_search_preview tool.
+Initiates a new flow run for a specific saved automation.
 
 **Inputs:**
-- `model` (string): Model to use for response generation
-- `tools` (array): Tools the model can use
-  - Must include a single tool object:
-    ```
-    {
-      "type": "web_search_preview",
-      "web_search_preview": {
-        // Same options as web_search_options above
-      }
-    }
-    ```
-- `messages` (array): Conversation messages (same format as above)
+- `user_id` (string): The ID for the user initiating the flow
+- `saved_item_id` (string): The ID for the saved flow
+- `project_id` (string, optional): The ID of the project within which the flow is executed
+- `pipeline_inputs` (array, optional): List of inputs for the flow
+  - `input_name` (string): The 'input_name' parameter from your Input node
+  - `value` (string): The value to be passed to the Input node
 
-**Returns:** Response with model-generated content and citations
+**Returns:** Response with run details including run_id, saved_item_id, workbook_id and URL
+
+### `retrieveRunDetails`
+
+Retrieves details about a specific flow run.
+
+**Inputs:**
+- `run_id` (string): ID of the flow run to retrieve
+- `user_id` (string, optional): The ID for the user initiating the flow
+- `project_id` (string, optional): The ID of the project within which the flow is executed
+
+**Returns:** Response with run details including state, outputs, timestamps, and logs
+
+### `listSavedFlows`
+
+Retrieves a list of all saved flows for a user or project.
+
+**Inputs:**
+- `user_id` (string, optional): The user ID for which to list items
+- `project_id` (string, optional): The project ID for which to list items
+
+**Returns:** Response with list of saved flows and their metadata
+
+### `listWorkbooks`
+
+Retrieves a list of all workbooks and their associated saved flows.
+
+**Inputs:**
+- `user_id` (string, optional): The user ID for which to list workbooks
+- `project_id` (string, optional): The project ID for which to list workbooks
+
+**Returns:** Response with list of workbooks and their associated saved flows
+
+### `retrieveInputSchema`
+
+Retrieves the input schema for a specific saved flow.
+
+**Inputs:**
+- `saved_item_id` (string): The ID of the saved item for which to retrieve input schemas
+- `user_id` (string, optional): User ID that created the flow
+- `project_id` (string, optional): Project ID that the flow is under
+
+**Returns:** Response with list of input parameters for the flow
+
+### `uploadFile`
+
+Uploads a single file to the Gumloop platform.
+
+**Inputs:**
+- `file_name` (string): The name of the file to be uploaded
+- `file_content` (string): Base64 encoded content of the file
+- `user_id` (string, optional): The user ID associated with the file
+- `project_id` (string, optional): The project ID associated with the file
+
+**Returns:** Response with success status and file name
+
+### `uploadMultipleFiles`
+
+Uploads multiple files to the Gumloop platform in a single request.
+
+**Inputs:**
+- `files` (array): Array of file objects to upload
+  - `file_name` (string): The name of the file to be uploaded
+  - `file_content` (string): Base64 encoded content of the file
+- `user_id` (string, optional): The user ID associated with the files
+- `project_id` (string, optional): The project ID associated with the files
+
+**Returns:** Response with success status and list of uploaded file names
+
+### `downloadFile`
+
+Downloads a specific file from the Gumloop platform.
+
+**Inputs:**
+- `file_name` (string): The name of the file to download
+- `run_id` (string): The ID of the flow run associated with the file
+- `saved_item_id` (string): The saved item ID associated with the file
+- `user_id` (string, optional): The user ID associated with the flow run
+- `project_id` (string, optional): The project ID associated with the flow run
+
+**Returns:** The requested file content
+
+### `downloadMultipleFiles`
+
+Downloads multiple files from the Gumloop platform as a zip archive.
+
+**Inputs:**
+- `file_names` (array): An array of file names to download
+- `run_id` (string): The ID of the flow run associated with the files
+- `user_id` (string, optional): The user ID associated with the files
+- `project_id` (string, optional): The project ID associated with the files
+- `saved_item_id` (string, optional): The saved item ID associated with the files
+
+**Returns:** Zip file containing the requested files
 
 ## Setup
 
-### Personal Access Token
+### API Key
 
-Create an OpenAI API key with access to the required models:
+Create a Gumloop API key with access to the required features:
 
-1. Go to [OpenAI API Keys](https://platform.openai.com/account/api-keys)
-2. Create a new API key
+1. Go to [Gumloop Workspace Settings](https://www.gumloop.com/profile#Credentials)
+2. Generate a new API key
 3. Copy the generated key
 
 ### Usage with Claude Desktop
 
-To use this with Claude Desktop, add the following to your
-`claude_desktop_config.json`:
+To use this with Claude Desktop, add the following to your `claude_desktop_config.json`:
 
 #### Using NPX
 
 ```json
 {
   "mcpServers": {
-    "websearch": {
+    "gumloop": {
       "command": "npx",
       "args": [
         "-y",
-        "openai-websearch-mcp"
+        "gumloop-mcp-server"
       ],
       "env": {
-        "OPENAI_API_KEY": "<YOUR_OPENAI_API_KEY>"
+        "GUMLOOP_API_KEY": "<YOUR_GUMLOOP_API_KEY>"
       }
     }
   }
@@ -104,29 +154,21 @@ To use this with Claude Desktop, add the following to your
 
 #### Using Docker
 
-Pull the image from the [GitHub Container Registry (ghrc.io): OpenAI WebSearch
-MCP](https://github.com/tiovikram/openai-websearch-mcp/pkgs/container/openai-websearch-mcp)
-
-```bash
-docker pull ghcr.io/tiovikram/openai-websearch-mcp
-docker tag ghcr.io/tiovikram/openai-websearch-mcp openai-websearch-mcp
-```
-
 ```json
 {
   "mcpServers": {
-    "websearch": {
+    "gumloop": {
       "command": "docker",
       "args": [
         "run",
         "-i",
         "--rm",
         "-e",
-        "OPENAI_API_KEY",
-        "openai-websearch-mcp"
+        "GUMLOOP_API_KEY",
+        "gumloop-mcp-server"
       ],
       "env": {
-        "OPENAI_API_KEY": "<YOUR_OPENAI_API_KEY>"
+        "GUMLOOP_API_KEY": "<YOUR_GUMLOOP_API_KEY>"
       }
     }
   }
@@ -135,139 +177,91 @@ docker tag ghcr.io/tiovikram/openai-websearch-mcp openai-websearch-mcp
 
 ## Examples
 
-### Basic Web Search
+### Starting an Automation
 
 ```javascript
-// Using web_search_chat_completion
-const result = await agent.callTool("web_search_chat_completion", {
-  model: "gpt-4o-search-preview",
-  messages: [
-	{ role: "user", content: "What are the latest AI advancements this month?"
-}
-  ]
-});
-```
-
-### Location-Specific Search
-
-```javascript
-// Search with location context
-const result = await agent.callTool("web_search_chat_completion", {
-  model: "gpt-4o-search-preview",
-  web_search_options: {
-    user_location: {
-      type: "approximate",
-      approximate: {
-        country: "GB",
-        city: "London",
-        region: "London"
-      }
-    }
-  },
-  messages: [
-	{ role: "user", content: "What are the best restaurants around Granary
-Square?" }
-  ]
-});
-```
-
-### Adjusting Search Context Size
-
-```javascript
-// Using lower context size for faster, cheaper results
-const result = await agent.callTool("web_search_chat_completion", {
-  model: "gpt-4o-search-preview",
-  web_search_options: {
-    search_context_size: "low"
-  },
-  messages: [
-    { role: "user", content: "What movie won best picture in 2025?" }
-  ]
-});
-```
-
-### Conditional Search with Responses API
-
-```javascript
-// Using web_search_responses for conditional search
-const result = await agent.callTool("web_search_responses", {
-  model: "gpt-4o",
-  tools: [
+// Start a saved automation flow
+const result = await agent.callTool("startAutomation", {
+  user_id: "user123",
+  saved_item_id: "flow456",
+  pipeline_inputs: [
     {
-      type: "web_search_preview",
-      web_search_preview: {
-        search_context_size: "medium",
-        user_location: {
-          type: "approximate",
-          approximate: {
-            country: "US",
-            city: "New York"
-          }
-        }
-      }
+      input_name: "search_query",
+      value: "AI automation trends 2025"
     }
-  ],
-  messages: [
-    { role: "user", content: "What's playing at Broadway theaters this week?" }
   ]
+});
+```
+
+### Checking Run Status
+
+```javascript
+// Check the status of a running automation
+const result = await agent.callTool("retrieveRunDetails", {
+  run_id: "run789",
+  user_id: "user123"
+});
+```
+
+### Listing Available Flows
+
+```javascript
+// Get all saved flows for a user
+const result = await agent.callTool("listSavedFlows", {
+  user_id: "user123"
+});
+```
+
+### Working with Files
+
+```javascript
+// Upload a file to be used in an automation
+const result = await agent.callTool("uploadFile", {
+  user_id: "user123",
+  file_name: "data.csv",
+  file_content: "base64EncodedFileContent..."
 });
 ```
 
 ## Response Format
 
-The server returns OpenAI API responses that include:
+The server returns Gumloop API responses in JSON format. Here's an example for retrieving run details:
 
-- Generated content from the model
-- Inline citations referencing sources
-- Annotations with detailed citation information
-- Location in text where sources were referenced
-
-Example response snippet:
 ```json
 {
-  "choices": [
-    {
-      "index": 0,
-      "message": {
-        "role": "assistant",
-		"content": "According to recent reports, NASA's Artemis program has
-reached a new milestone...[1]",
-        "annotations": [
-          {
-            "type": "url_citation",
-            "url_citation": {
-              "start_index": 158,
-              "end_index": 161,
-              "url": "https://www.nasa.gov/artemis-news/",
-              "title": "NASA Artemis Program Updates"
-            }
-          }
-        ]
-      },
-      "finish_reason": "stop"
-    }
+  "user_id": "user123",
+  "state": "RUNNING",
+  "outputs": {},
+  "created_ts": "2023-11-07T05:31:56Z",
+  "finished_ts": null,
+  "log": [
+    "Starting automation flow...",
+    "Processing input parameters...",
+    "Executing node 1: Web Scraper..."
   ]
 }
 ```
 
 ## Limitations
 
-- This tool does not support zero data retention or data residency
-- The search-enabled models only support a subset of API parameters
-- When used as a tool in the Responses API, web search has tiered rate limits
-- When displaying search results to end users, inline citations must be made
-clearly visible and clickable in your UI
+- API calls are subject to Gumloop's rate limits and usage quotas
+- File uploads are limited to the maximum size allowed by Gumloop's API
+- Some features may require specific subscription tiers
+- The server requires a valid Gumloop API key with appropriate permissions
 
 ## Build
 
-Docker build:
-
 ```bash
-docker build -t mcp/websearch -f src/websearch/Dockerfile .
+# Install dependencies
+pnpm install
+
+# Build the project
+pnpm run build
+
+# Start the server
+pnpm start
 ```
 
 ## License
 
-This MCP server is licensed under the MIT License. This means you are free to
-use, modify, and distribute the software, subject to the terms and conditions
-of the MIT License.
+This MCP server is licensed under the MIT License.
